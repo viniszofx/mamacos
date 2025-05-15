@@ -1,7 +1,7 @@
 import { verify } from 'jsonwebtoken'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const publicRoutes = ['/', '/auth/login', '/auth/register']
+const publicRoutes = ['/', '/auth/login', '/auth/register', '/api/auth/refresh']
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value

@@ -1,5 +1,6 @@
 "use client";
 
+import fetchClient from "@/lib/fetchClient";
 import { useEffect, useState } from "react";
 
 interface User {
@@ -15,12 +16,8 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/auth/profile", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-        console.log("Response:", res);
+        const res = await fetchClient("/api/auth/profile");
+
         if (!res.ok) {
           throw new Error("Failed to fetch user");
         }
