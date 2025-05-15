@@ -39,5 +39,8 @@ export async function POST(req: Request) {
     maxAge: 60 * 60 * 24,
   })
 
-  return NextResponse.json({ message: 'Login realizado com sucesso' })
+  return NextResponse.json({ 
+    message: 'Login realizado com sucesso',
+    redirect: '/dashboard'
+  })
 }
