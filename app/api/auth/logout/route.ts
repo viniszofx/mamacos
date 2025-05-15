@@ -1,13 +1,20 @@
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
-  (await cookies()).set({
-    name: 'token',
-    value: '',
-    path: '/',
-    maxAge: 0,
-  })
+  // Delete the authentication token
+  (await
+    // Delete the authentication token
+    cookies()).delete('token');
 
-  return NextResponse.json({ message: 'Logout realizado' })
+  // Return response with redirect
+  return NextResponse.json(
+    { message: "Logout realizado" }, 
+    {
+      status: 200,
+      headers: {
+        'Location': '/'
+      }
+    }
+  );
 }

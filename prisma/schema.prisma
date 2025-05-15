@@ -7,10 +7,133 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  PRESIDENT
+  OPERATOR
+}
+
 model User {
+  id                    String             @id @default(uuid())
+  email                 String             @unique
+  password              String
+  name                  String?
+  avatar                String? // URL to avatar image
+  role                  Role               @default(OPERATOR)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  organization          Organization?      @relation("OrganizationUsers", fields: [orgId], references: [id], onDelete: SetNull)
+  orgId                 String?
+  ownedOrganization     Organization?      @relation("OrganizationOwner")
+  ownedCompanies        Company[]          @relation("CompanyOwner")
+  presidedCommissions   Commission[]       @relation("CommissionPresident")
+  commissionMemberships CommissionMember[]
+  itemUpdates           ItemUpdate[]
+  createdItems          Item[]
+  uploadedFiles         CommissionFile[]
+
+  @@index([orgId])
+}
+
+model Organization {
+  id        String    @id @default(uuid())
+  name      String
+  owner     User      @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     User[]    @relation("OrganizationUsers")
+  companies Company[]
+
+  @@index([ownerId])
+}
+
+model Company {
+  id           String        @id @default(uuid())
+  name         String
+  organization Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId        String?
+  owner        User          @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  commissions  Commission[]
+
+  @@index([orgId])
+  @@index([ownerId])
+}
+
+model Commission {
+  id          String             @id @default(uuid())
+  name        String
+  isActive    Boolean            @default(true)
+  company     Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   String
+  president   User               @relation("CommissionPresident", fields: [presidentId], references: [id], onDelete: Cascade)
+  presidentId String
+  members     CommissionMember[]
+  items       Item[]
+  files       CommissionFile[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([companyId])
+  @@index([presidentId])
+}
+
+model CommissionMember {
+  id           String     @id @default(uuid())
+  commission   Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  commissionId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  addedAt      DateTime   @default(now())
+  addedBy      String // ID of the president who added the member
+
+  @@unique([commissionId, userId])
+  @@index([commissionId])
+  @@index([userId])
+}
+
+model CommissionFile {
+  id           String     @id @default(uuid())
+  name         String
+  url          String
+  commission   Commission @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  commissionId String
+  uploadedBy   User       @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedById String
+  createdAt    DateTime   @default(now())
+
+  @@index([commissionId])
+  @@index([uploadedById])
+}
+
+model Item {
+  id           String       @id @default(uuid())
+  name         String
+  description  String?
+  commission   Commission   @relation(fields: [commissionId], references: [id], onDelete: Cascade)
+  commissionId String
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  updates      ItemUpdate[]
+
+  @@index([commissionId])
+  @@index([createdById])
+}
+
+model ItemUpdate {
   id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String?
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  changes   Json // Stores what was changed
   createdAt DateTime @default(now())
+
+  @@index([itemId])
+  @@index([userId])
 }

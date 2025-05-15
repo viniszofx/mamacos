@@ -1,151 +1,144 @@
-"use client";
+import { LogoutButton } from "@/components/LogoutButton";
+import { UserManagementForm } from "@/components/dashboard/UserManagementForm";
+import { verifyAuth } from "@/lib/auth";
+import { PrismaClient } from "@prisma/client";
+import { cookies } from "next/headers";
 
-import fetchClient from "@/lib/fetchClient";
-import { useEffect, useState } from "react";
+const prisma = new PrismaClient();
 
-interface User {
-  id: string;
-  email: string;
-  name: string | null;
+async function getUserData(userId: string) {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      ownedOrganization: {
+        include: {
+          companies: true, // Include companies (campus) of organization
+        },
+      },
+      ownedCompanies: true,
+      organization: true,
+    },
+  });
 }
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+export default async function DashboardPage() {
+  console.log("DashboardPage");
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const decoded = await verifyAuth(token!.value);
+  const userData = await getUserData(decoded.userId);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetchClient("/api/auth/profile");
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch user");
-        }
-
-        const data = await res.json();
-        setUser(data);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
+  if (!userData) {
     return <div>Error loading user data</div>;
   }
 
-  const handleExit = async () => {
-    try {
-      const res = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) {
-        throw new Error("Failed to logout");
-      }
-      window.location.href = "/auth/login";
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
+  const workspace = userData.ownedOrganization || userData.ownedCompanies[0];
+  const campuses =
+    userData.ownedOrganization?.companies ||
+    [userData.ownedCompanies[0]].filter(Boolean);
+
+  const companies = userData.ownedOrganization?.companies || [];
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <button
-            onClick={handleExit}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 flex items-center gap-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v1a1 1 0 102 0V9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Logout
-          </button>
-        </div>
-
-        <div className="bg-white shadow-lg rounded-lg p-8">
-          <div className="border-b pb-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              Welcome, {user.name || user.email}!
-            </h2>
-            <p className="text-gray-600 mt-2">
-              Manage your account details below
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center p-4 bg-gray-50 rounded-md">
-              <div className="bg-blue-100 p-3 rounded-full mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-blue-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Email address
-                </p>
-                <p className="text-lg font-semibold text-gray-900">
-                  {user.email}
-                </p>
-              </div>
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <span className="text-lg font-semibold text-gray-900">
+                Dashboard
+              </span>
             </div>
-
-            <div className="flex items-center p-4 bg-gray-50 rounded-md">
-              <div className="bg-purple-100 p-3 rounded-full mr-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-purple-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">User ID</p>
-                <p className="text-lg font-semibold text-gray-900">{user.id}</p>
-              </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">{userData.email}</span>
+              <LogoutButton />
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </nav>
+
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {userData.role === "ADMIN" && (
+          <div className="mb-8">
+            <UserManagementForm
+              organizationId={userData.ownedOrganization?.id || userData.orgId!}
+              companies={companies}
+              currentUserRole={userData.role}
+            />
+          </div>
+        )}
+
+        <div className="px-4 py-6 sm:px-0">
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div className="px-4 py-5 sm:px-6">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                User Information
+              </h3>
+            </div>
+            <div className="border-t border-gray-200">
+              <dl>
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Name</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {userData.name}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Email</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {userData.email}
+                  </dd>
+                </div>
+                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">Role</dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {userData.role}
+                  </dd>
+                </div>
+                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                  <dt className="text-sm font-medium text-gray-500">
+                    {workspace
+                      ? userData.ownedOrganization
+                        ? "Organization"
+                        : "Campus"
+                      : "Workspace"}
+                  </dt>
+                  <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                    {workspace?.name || "No workspace assigned"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {workspace && (
+              <>
+                <div className="px-4 py-5 sm:px-6 border-t border-gray-200">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Campus Information
+                  </h3>
+                </div>
+                <div className="border-t border-gray-200">
+                  <dl>
+                    {campuses.map((campus) => (
+                      <div
+                        key={campus.id}
+                        className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6"
+                      >
+                        <dt className="text-sm font-medium text-gray-500">
+                          Campus Name
+                        </dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          {campus.name}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
