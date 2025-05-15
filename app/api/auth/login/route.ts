@@ -19,7 +19,15 @@ export async function POST(req: Request) {
 
   console.log('User found:', user)
   
-  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '1d' })
+  const token = jwt.sign(
+    { 
+      userId: user.id,  // Make sure this matches the decoded token structure
+    }, 
+    process.env.JWT_SECRET!,
+    { 
+      expiresIn: '24h' 
+    }
+  )
 
   ;(await cookies()).set({
     name: 'token',
