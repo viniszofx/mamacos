@@ -5,7 +5,8 @@ import { NextResponse } from 'next/server'
 const prisma = new PrismaClient()
 
 export async function POST(request: Request) {
-  const { email, password, name } = await request.json()
+  const { email, password, username } = await request.json()
+  console.log(" (API) Registering user:", { email, password, username })
 
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
 
   const hashed = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
-    data: { email, password: hashed, name },
+    data: { email, password: hashed, name: username },
   })
 
   return NextResponse.json({ id: user.id, email: user.email })

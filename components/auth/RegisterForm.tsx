@@ -9,6 +9,7 @@ const RegisterForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Call the login function from lib/auth.ts here
+    console.log("Registering user:", { username, email, password });
     await fetch("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ username, email, password }),
