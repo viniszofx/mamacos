@@ -45,11 +45,13 @@ export async function POST(request: Request) {
       // Check if user exists
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
+        console.error("User already exists:", email);
         return NextResponse.json({ error: "Email already registered" }, { status: 400 });
       }
 
       // Generate temporary password
       const tempPassword = generateTempPassword();
+      console.log("Temporary password:", tempPassword);
       const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
       // Create user with all associations
