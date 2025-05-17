@@ -6,6 +6,8 @@ const prisma = new PrismaClient()
 export async function GET() {
   try {
     const usersCount = await prisma.user.count()
+
+    console.log('Users count:', usersCount)
     
     return NextResponse.json({
       isFirstUser: usersCount === 0,

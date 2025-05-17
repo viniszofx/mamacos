@@ -46,6 +46,7 @@ const RegisterForm: React.FC = () => {
         if (!res.ok) throw new Error("Failed to fetch registration status");
 
         const data = await res.json();
+        console.log("Registration status data:", data);
         setStatus(data);
       } catch (error) {
         setError("Failed to load registration form");
@@ -59,6 +60,7 @@ const RegisterForm: React.FC = () => {
   }, []);
 
   if (loading) {
+    console.log("Loading registration status...", loading);
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
